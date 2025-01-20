@@ -17,6 +17,7 @@ from pyproj import Geod
 #import time
 from io import StringIO   
 import sys 
+import argparse
 
 import Line_intersection
 import Functions
@@ -703,26 +704,31 @@ def determine_altitude(point_on_map, point_on_traj_line, direction_vector, param
                                                             nearest_point_3D.get_Z()*1000)[2]    
     return altitude        
                 
-path = "C:\\Users\\ngo_ma\\Documents\\Nachtlicht-BüHNE2\\Khoi\\IMO France - FRIPON reconstruction\\"
-eventID = input("Type event ID: ")
+#path = "C:\\Users\\ngo_ma\\Documents\\Nachtlicht-BüHNE2\\Khoi\\IMO France - FRIPON reconstruction\\"
+#eventID = input("Type event ID: ")
+
+parser = argparse.ArgumentParser(description='Reconstruct the trajectory of a fireball based on its observations')
+parser.add_argument('event_ID', type=str, help='The event ID is required')
+
+args = parser.parse_args()
 
 list_all_observation = []
 list_highest_rank_points_by_azimuth = []
 list_highest_rank_points_by_elevation = []
 
-with open(path + eventID + ".csv", mode = "r") as file:
-    csvFile = csv.reader(file)
-    countLine = 0;
-    for lines in csvFile:
-        if (countLine != 0):
+with open(args.event_ID + ".csv", mode = "r") as file:
+    csv_file = csv.reader(file)
+    count_line = 0;
+    for lines in csv_file:
+        if (count_line != 0):  # to skip the header line in the csv file            
             print(lines)
-            if ((float(lines[5]) != float(lines[7])) or (float(lines[4]) != float(lines[6]))):
+            if ((float(lines[5]) != float(lines[7])) or (float(lines[4]) != float(lines[6]))): # to avoid errorneous observations (observation that are 0° or 180°)
                 obs = Observation(lines[0], lines[1], float(lines[3]), float(lines[2]), 
                                   float(lines[4]), float(lines[5]), float(lines[6]), float(lines[7]))
                 list_all_observation.append(obs)            
-        countLine += 1 
+        count_line += 1 
         
-    print("Number of all observations from file is ", countLine-1, "number of observations as input for the reconstruction is ", len(list_all_observation))
+    print("Number of all observations from file is ", count_line-1, "number of observations as input for the reconstruction is ", len(list_all_observation))
 
 reliable_obs_azimuth = rank_observation_by_azimuth_optimized(list_all_observation, OBSERVATION_RANGE, 
                                                              list_highest_rank_points_by_azimuth)    
