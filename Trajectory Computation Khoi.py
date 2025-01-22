@@ -414,6 +414,13 @@ def compute_angle_between_vectors_using_cosine(a, b):
     magnitude_b_vector = compute_vector_magnitude(b)
     
     cos_theta = dot_product_value / (magnitude_a_vector * magnitude_b_vector)
+    if (cos_theta > 1 or cos_theta < -1):
+        print("cos_theta is", cos_theta)
+        print(a.get_X(), a.get_Y(), a.get_Z(),b.get_X(), b.get_Y(), b.get_Z())
+        print("dot product is", dot_product_value)
+        print("magnitude of a is", magnitude_a_vector)
+        print("magnitude of b is", magnitude_b_vector)
+        cos_theta = 1
     
     return to_degree(math.acos(cos_theta)) 
 
@@ -445,23 +452,24 @@ def rank_observation_by_elevation_optimized(observation_list, list_highest_rank_
     start_vector_array = []
     end_vector_array = []
     observation_position_3d_array = []
+    temp_observation_list = []
             
     for obs in observation_list:
         #obs = observation_list[index]
         point_of_specific_observation_plane = []
-        list_point_of_observation_plane.append(point_of_specific_observation_plane)
+        
         
         start_vector = convert_angular_direction_vector_to_cartesian_vector(obs.get_latitude(), obs.get_longitude(), 
                                                                             obs.get_start_azimuth(), obs.get_start_elevation())        
         
-        endVector = convert_angular_direction_vector_to_cartesian_vector(obs.get_latitude(), obs.get_longitude(), 
+        end_vector = convert_angular_direction_vector_to_cartesian_vector(obs.get_latitude(), obs.get_longitude(), 
                                                                          obs.get_end_azimuth(), obs.get_end_elevation())        
         
         observerPosition =  convert_lat_long_alt_to_cartesian_coordinates(obs.get_latitude(), obs.get_longitude(),0)
         #print(observerPosition)
-        observation_position_3d_array.append(observerPosition)
+        
                 
-        orthogonalVector = cross_product(start_vector,endVector)
+        orthogonalVector = cross_product(start_vector,end_vector)
         
         A_component = orthogonalVector.get_X()
         B_component = orthogonalVector.get_Y()
@@ -469,17 +477,21 @@ def rank_observation_by_elevation_optimized(observation_list, list_highest_rank_
         D_component = (-1) * (orthogonalVector.get_X() * observerPosition.get_X() 
                               + orthogonalVector.get_Y() * observerPosition.get_Y() 
                               + orthogonalVector.get_Z() * observerPosition.get_Z() )
+        observationPlane = Plane3D(A_component, B_component, C_component, D_component)
         
-        if ( (math.pow(A_component,2) + math.pow(B_component,2) + math.pow(C_component,2)) != 0 ):
-            observationPlane = Plane3D(A_component, B_component, C_component, D_component)
+        if ( (math.pow(A_component,2) + math.pow(B_component,2) + math.pow(C_component,2)) != 0 ):            
             observation_plane_array.append(observationPlane)
+            temp_observation_list.append(obs)
             start_vector_array.append(start_vector)
-            end_vector_array.append(endVector)
-        
-        print("observation plane is ",observationPlane.get_A(), observationPlane.get_B(), 
+            end_vector_array.append(end_vector)
+            observation_position_3d_array.append(observerPosition)
+            list_point_of_observation_plane.append(point_of_specific_observation_plane)           
+            print("observation plane is ",observationPlane.get_A(), observationPlane.get_B(), 
                                       observationPlane.get_C(), observationPlane.get_D() )
+        else:
+            print("This obs", obs.get_observation_ID(), "cannot form an observation plane")
     
-    print("Number of observation plane is", len(observation_plane_array))    
+    print("Number of observation plane is", len(observation_plane_array), "length of observation_list", len(temp_observation_list))    
     
     countPoint3D = 0
     pointNearTriangle = 0
@@ -514,7 +526,7 @@ def rank_observation_by_elevation_optimized(observation_list, list_highest_rank_
             for i in range(0, len(list_point_of_observation_plane[index])):
                 if (point_map.get(list_point_of_observation_plane[index][i]) > max_rank_of_observation):
                     max_rank_of_observation = point_map.get(list_point_of_observation_plane[index][i])
-        map_observation_rank[observation_list[index]] = max_rank_of_observation
+        map_observation_rank[temp_observation_list[index]] = max_rank_of_observation
     
     print("point_map 3D has size of ", len(point_map))
     
@@ -523,9 +535,8 @@ def rank_observation_by_elevation_optimized(observation_list, list_highest_rank_
     
     print("ELEVATION: Highest ranking is ", max_rank_overall, "and second highest is ", second_max_rank_overall)
     
-    for obs in observation_list:
-        #print("Current index is",i)
-        #obs = observation_list[i]
+    for obs in temp_observation_list:
+        
         if ( (map_observation_rank.get(obs) == max_rank_overall) 
               or (map_observation_rank.get(obs) == second_max_rank_overall)):
             list_ranked_observation.append(obs)
@@ -599,7 +610,7 @@ def determine_start_point_end_point_improved(point_on_traj_line, direction_vecto
     
     point_collection = []
     
-    for i in range(-1000,1001):
+    for i in range(-2000,2001):
         point_XYZ = Point3D(point_on_traj_line.get_X() + direction_vector.get_X()*i, 
                             point_on_traj_line.get_Y() + direction_vector.get_Y()*i, 
                             point_on_traj_line.get_Z() + direction_vector.get_Z()*i)
@@ -619,7 +630,7 @@ def determine_start_point_end_point_improved(point_on_traj_line, direction_vecto
     
     print("First point is", point_collection[0].x, point_collection[0].y)
     print("Last point is", point_collection[len(point_collection)-1].x, point_collection[len(point_collection)-1].y)
-    print("Distance of the projected whole traj line is", sum_distance)
+    print("Distance of the projected whole traj line is", sum_distance)    
     
     long_trajectory_line = LineString([point_collection[0], point_collection[len(point_collection)-1]])
     
@@ -650,7 +661,7 @@ def determine_start_point_end_point_improved(point_on_traj_line, direction_vecto
     multipoint_start = MultiPoint(point_collection_start_line)    
     trajectory_start_point = multipoint_start.centroid  
     print("\n Final result -----------***-----------")
-    print("START is", trajectory_start_point)
+    print("START is", trajectory_start_point.y, trajectory_start_point.x)
     altitude_start = determine_altitude(trajectory_start_point, point_on_traj_line, direction_vector, 1000)
     print("Estimated start altitude is", altitude_start)
     
