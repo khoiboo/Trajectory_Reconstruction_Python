@@ -840,16 +840,6 @@ def functional_model(XmS,YmS,ZmS, XcS,YcS,ZcS, aiS,biS,ciS, vaS,vbS,vcS, amS,bmS
 B = np.zeros((nL,nL*3))
 A = np.zeros((nL,4))
 
-def write_to_txt(filename, text):
-    try:
-        with open(filename, 'w') as file:
-            file.write(text)
-        print(f"Text has been written to '{filename}' successfully.")
-    except IOError:
-        print(f"Error: Unable to write to '{filename}'.")
-        
-        
-        
 def Design_matrix(Xm,Ym,Zm, Xc,Yc,Zc, ai,bi,ci, va,vb,vc, am,bm,cm):
     B_va = np.mat(np.diag( bm*(Zm-Zc)-cm*(Ym-Yc) )) 
     B_vb = np.mat(np.diag( cm*(Xm-Xc)-am*(Zm-Zc) )) 
